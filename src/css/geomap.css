@@ -1,0 +1,27 @@
+.feature {
+    cursor: pointer;
+}
+  
+.feature.active {
+    stroke-dasharray: 0.2;
+    stroke-width: .2;
+    stroke: black;
+}
+
+.feature.over {
+    stroke-dasharray: 0.2;
+    stroke-width: .2;
+    stroke: gray;
+}
+
+.select2-container .select2-choice, .select2-result-label {
+    font-size: 1.5em;
+    height: 300px; 
+    width: 300px;
+    overflow: auto;
+}
+
+#estados {
+    position: absolute;
+    left:80px; top:2px;
+}
