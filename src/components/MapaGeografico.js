@@ -11,7 +11,10 @@ class MapaGeografico extends Component {
   state = {
     br: {},
     analfabestimo: {},
-    select2: []
+    estados: [],
+    cidades: [],
+    idEstado: null,
+    idMunicipio: null,
   }
 
   locale = {
@@ -20,6 +23,8 @@ class MapaGeografico extends Component {
     grouping: [3],
     currency: ["R$", ""]
   }
+
+  drawed = false;
 
   color = d3.scaleQuantize().domain([0, 40]).range(d3.schemeReds[9]);
 
@@ -35,22 +40,22 @@ class MapaGeografico extends Component {
 
         this.cities = new Map(br.objects.cities.geometries.map(d => [d.id, d.properties]))
 
-        let select2 = []
+        let estados = []
 
         this.states.forEach((valor, chave, mapa) => {
           let node = {
             text: valor.name,
             id: chave
           }
-          select2.push(node);
+          estados.push(node);
         });
 
-        select2 = select2.sort((a, b) => a.text.localeCompare(b.text));
+        estados.sort((a, b) => a.text.localeCompare(b.text));
 
         this.setState({
           br: br,
           analfabestimo: analfabestimo,
-          select2: select2
+          estados: estados
         });
 
       }).catch(err => console.log('Error loading or parsing data.'));
@@ -89,11 +94,11 @@ class MapaGeografico extends Component {
 
   drawChart(state) {
 
-    this.active = d3.select(null);
-
     let { br, analfabestimo } = state;
 
-    if ("objects" in br) {
+    if ("objects" in br && this.drawed == false) {
+
+      this.drawed = true;
 
       this.data = Object.assign(new Map(analfabestimo), { title: "Taxa de Analfabetismo (%) em 2010" });
 
@@ -103,15 +108,15 @@ class MapaGeografico extends Component {
         .on("click", this.reset)
         .style("width", "100%");
 
-      console.log(this.svg.select(function() { return this.parentNode}));
-
       let width = this.svg.attr('width');
       let height = this.svg.attr('height');
 
-      this.deltax = 1000;
+      // this.deltax = 700;
+      this.deltax = 900;
 
       var projection = d3.geoMercator()
-        .scale(800)
+        .scale(750)
+        // .scale(800)
         .translate([width / 2 + this.deltax, height / 2 - 200]);
 
       this.path = d3.geoPath().projection(projection);
@@ -119,17 +124,17 @@ class MapaGeografico extends Component {
       // this.path = d3.geoPath();
 
       const gcities = this.svg.append("g")
-        .attr("id", "gcities");;
+        .attr("id", "gcities");
 
       gcities.selectAll("path")
         .data(topojson.feature(br, br.objects.cities).features)
         .join("path")
         .attr("fill", d => this.color(this.data.get(`${d.id.slice(0, 2)}-${d.properties.name}`)))
         .attr("stroke", "none")
-        .attr("class", "feature")
+        .attr("id", d => `feature_${d.id}`)
+        .attr("class", "municipio")
         //.attr("stroke-width", 0.005)
         .attr("d", this.path)
-        .attr("id", d => d.id)
         .on("click", this.clicked())
         .append("title")
         .text(d => `${d.properties.name}, ${this.states.get(d.id.slice(0, 2)).name}
@@ -143,7 +148,8 @@ ${isNaN(this.data.get(`${d.id.slice(0, 2)}-${d.properties.name}`)) ? 'Não dispo
         .join("path")
         .attr("fill", "gray")
         .attr("stroke", "black")
-        .attr("id", d => `estado_${d.id}`)
+        .attr("id", d => `feature_${d.id}`)
+        .attr("class", "estado")
         .attr("stroke-width", 0.3)
         .on("click", this.clicked())
         .attr("stroke-linejoin", "round")
@@ -162,13 +168,13 @@ ${isNaN(this.data.get(`${d.id.slice(0, 2)}-${d.properties.name}`)) ? 'Não dispo
         });
 
       this.svg.append("g")
-        .attr("transform", "translate(700, 30) scale(1.5)")
+        .attr("transform", "translate(700, 30)")
         .call(this.legend.bind(this));
 
       const greset = this.svg.append("g")
         .attr("id", "reset_button")
-        .attr("display", "none")
-        .attr("transform", "translate(1200, 550)")
+        //.attr("display", "none")
+        .attr("transform", "translate(900, 500)");
 
       greset.append("circle")
         .attr("r", "15px")
@@ -194,87 +200,167 @@ ${isNaN(this.data.get(`${d.id.slice(0, 2)}-${d.properties.name}`)) ? 'Não dispo
 
     let that = this;
 
-    return function (d) {
 
+    return function (d) {
       console.log("that");
       console.log(that);
-      console.log("this");
-      console.log(this);
-      console.log("d")
-      console.log(d)
 
-      if (that.active.node() === this) return that.reset();
-      that.active.classed("active", false);
-      that.active = d3.select(this).classed("active", true);
+      that.update(d.id);
 
-      const path = d3.select(this);
-
-      if (path.attr("id").includes("estado")) {
-
-        d3.select("#gstates")
-          .selectAll("path")
-          .attr("fill", "gray")
-          .attr("fill-opacity", 0.5);
-
-        path.attr("fill", "none");
-        console.log("clicou num estado");
-      }
-
-      console.log("d.properties.name");
-      console.log(d.properties.name);
-
-      let width = that.svg.attr('width');
-      let height = that.svg.attr('height');
-
-      var bounds = that.path.bounds(d),
-        dx = bounds[1][0] - bounds[0][0],
-        dy = bounds[1][1] - bounds[0][1],
-        x = (bounds[0][0] + bounds[1][0]) / 2,
-        y = (bounds[0][1] + bounds[1][1]) / 2,
-        scale = Math.max(1, Math.min(35, 0.9 / Math.max(dx / width, dy / height))) * .9,
-        translate = [width / 2 + that.deltax / 2 - 200 - scale * x, height / 2 - scale * y + 30];
-
-      that.svg.transition()
-        .duration(750)
-        .call(that.zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
     }
   }
 
-  reset() {
-    if (this.active) {
-      this.active.classed("active", false);
-      this.active = d3.select(null);
+
+  update = (id) => {
+
+    let that = this;
+
+    let dis = $('#feature_' + id)[0];
+    let d = d3.select(dis).data()[0];
+
+    console.log("that");
+    console.log(that);
+    console.log("dis");
+    console.log(dis);
+    console.log("d")
+    console.log(d)
+
+    console.log("recuperando os dados:")
+    console.log(d3.select(dis).data())
+
+
+    const path = d3.select('#feature_' + id);
+    console.log("path");
+    console.log(path);
+
+    let isEstado = path.attr("class") === 'estado';
+    if (isEstado) {
+      console.log("clicou num estado");
+
+      if (that.activeState) that.activeState.classed("active", false);
+      that.activeState = d3.select(dis).classed("active", true);
+
+      console.log("Id Estado: " + d.id);
+
+
+
       d3.select("#gstates")
         .selectAll("path")
         .attr("fill", "gray")
-        .attr("fill-opacity", 0);
+        .attr("fill-opacity", 0.5);
 
+      path.attr("fill", "none");
+
+
+
+    } else {
+      console.log("clicou numa cidade");
+      if (that.activeCity) {
+        if (that.activeCity.node() === dis) {
+          console.log("Clicou na cidade que já estava selecionada");
+          var ev = document.createEvent("SVGEvents");
+          ev.initEvent("click", true, true);
+          console.log("that.activeState.data()[0]");
+          console.log(that.activeState.data()[0]);
+          that.activeCity.classed("active", false);
+          that.activeCity = d3.select(null);
+          let stateId = that.activeState.data()[0].id
+          this.update(stateId);
+          return;
+        } else {
+          that.activeCity.classed("active", false);
+          that.activeCity = d3.select(dis).classed("active", true);
+        }
+      } else {
+        console.log("Clicou em uma cidade não selecionada antes");
+        that.activeCity = d3.select(dis).classed("active", true);
+      }
+    }
+
+    let idEstado = isEstado ? d.id : d.id.slice(0, 2);
+    let idMunicipio = isEstado ? null : d.id;
+
+    let cidades = []
+    this.cities.forEach((valor, chave, mapa) => {
+      if (idEstado === chave.slice(0, 2)) {
+        let node = {
+          text: valor.name,
+          id: chave
+        }
+        cidades.push(node);
+      }
+    });
+    cidades.sort((a, b) => a.text.localeCompare(b.text));
+    this.setState({ cidades, idEstado, idMunicipio });
+
+    console.log("d.properties.name");
+    console.log(d.properties.name);
+
+    let width = that.svg.attr('width');
+    let height = that.svg.attr('height');
+
+    var bounds = that.path.bounds(d),
+      dx = bounds[1][0] - bounds[0][0],
+      dy = bounds[1][1] - bounds[0][1],
+      x = (bounds[0][0] + bounds[1][0]) / 2,
+      y = (bounds[0][1] + bounds[1][1]) / 2,
+      scale = Math.max(1, Math.min(35, 0.9 / Math.max(dx / width, dy / height))) * .9,
+      translate = [width / 2 + that.deltax / 2 - 200 - scale * x, height / 2 - scale * y + 30];
+
+    that.svg.transition()
+      .duration(750)
+      .call(that.zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+
+  }
+
+  reset() {
+    if (this.activeState || this.activeCity) {
+      if (this.activeState) {
+        this.activeState.classed("active", false);
+        this.activeState = d3.select(null);
+        d3.select("#gstates")
+          .selectAll("path")
+          .attr("fill", "gray")
+          .attr("fill-opacity", 0);
+      }
+      if (this.activeCity) {
+        this.activeCity.classed("active", false);
+        this.activeCity = d3.select(null);
+      }
+      let cidades = []
+      let idEstado = null;
+      let idMunicipio = null;
+      this.setState({ cidades, idEstado, idMunicipio });
       this.svg.transition()
         .duration(750)
         .call(this.zoom.transform, d3.zoomIdentity);
-    } else {
-
     }
-    d3.select('#reset_button')
-      .attr("display", "none");
+
+    // d3.select('#reset_button')
+    //   .attr("display", "none");
   }
 
   componentDidMount() {
     this.getData();
   }
 
-  select(e) {
+  selectEstado = (e) => {
+    e.stopImmediatePropagation();
     let selected = $("#estados").find(':selected');
-    if (selected[0]) {
-      let id = selected[0].value;
-      // console.log(id);
-      let prefix = "municipio";
-      if (id < 100) prefix = "estado";
-      id = `#${prefix}_${id}`;
-      console.log(id);
-      var ev = document.createEvent("SVGEvents");
-      ev.initEvent("click", true, true);
-      $(id)[0].dispatchEvent(ev);
+    if (selected && selected[0] && selected[0].value) {
+      console.log("id: ")
+      console.log(selected[0].value)
+      this.update(selected[0].value);
+    }
+  }
+
+  selectCidade = (e) => {
+    e.stopImmediatePropagation();
+    let selected = $("#cidades").find(':selected');
+    if (selected && selected[0] && selected[0].value) {
+      console.log("id: ")
+      console.log(selected[0].value)
+      this.update(selected[0].value);
     }
   }
 
@@ -282,12 +368,20 @@ ${isNaN(this.data.get(`${d.id.slice(0, 2)}-${d.properties.name}`)) ? 'Não dispo
     return (
       <div>
         <Select2 id="estados" ref="tags" style={{ width: '200px' }}
-          data={this.state.select2}
-          onChange={this.select.bind(this)}
+          value={this.state.idEstado}
+          data={this.state.estados}
+          onSelect={this.selectEstado}
           options={{
             placeholder: 'Selecione o estado',
           }} />
-        <svg className="mapa" width="800" height="600"></svg>
+        <Select2 id="cidades" ref="tags" style={{ width: '200px' }}
+          value={this.state.idMunicipio}
+          data={this.state.cidades}
+          onSelect={this.selectCidade}
+          options={{
+            placeholder: 'Selecione o município',
+          }} />
+        <svg className="mapa" width="800" height="560"></svg>
         {this.drawChart(this.state)}
       </div>
     );

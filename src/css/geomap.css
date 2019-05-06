@@ -1,17 +1,34 @@
-.feature {
+.municipio,.estado {
     cursor: pointer;
 }
   
-.feature.active {
-    stroke-dasharray: 0.2;
+.municipio.active {
+    /* stroke-dasharray: 0.2; */
     stroke-width: .2;
     stroke: black;
 }
 
-.feature.over {
-    stroke-dasharray: 0.2;
+.municipio:hover {
+    /* stroke-dasharray: 0.2; */
     stroke-width: .2;
-    stroke: gray;
+    stroke: black;
+}
+
+#gstates:hover .estado {
+    fill-opacity: 0.5;
+    fill: grey;
+}
+
+#gstates .estado:hover {
+    fill-opacity: 0;
+}
+
+#gstates:hover .estado.active {
+    fill: none;
+}
+
+.estado.active {
+    fill: none;
 }
 
 .select2-container .select2-choice, .select2-result-label {
@@ -19,9 +36,4 @@
     height: 300px; 
     width: 300px;
     overflow: auto;
-}
-
-#estados {
-    position: absolute;
-    left:80px; top:2px;
-}
+  }
