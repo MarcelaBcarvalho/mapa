@@ -82,7 +82,7 @@ class MapaGeografico extends Component {
 
       this.drawed = true;
 
-      this.data = Object.assign(new Map(analfabestimo), { title: "Taxa de Servidores Públicos no CADUNICO (%)" });
+      this.data = Object.assign(new Map(analfabestimo), { title: "Taxa de Analfabetismo por município (%) em 2010" });
 
       this.format = d3.formatDefaultLocale(this.locale).format(".1f");
 

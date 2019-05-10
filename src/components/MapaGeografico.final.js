@@ -113,7 +113,7 @@ class MapaGeografico extends Component {
 
       this.drawed = true;
 
-      this.data = Object.assign(new Map(analfabestimo), { title: "Taxa de Servidores Públicos no CADUNICO (%)" });
+      this.data = Object.assign(new Map(analfabestimo), { title: "Taxa de Analfabetismo por município (%) em 2010" });
 
       this.format = d3.formatDefaultLocale(this.locale).format(".1f");
 
@@ -188,6 +188,13 @@ ${isNaN(this.data.get(`${d.id.slice(0, 2)}-${d.properties.name}`)) ? 'Não dispo
         .attr("id", "reset_button")
         //.attr("display", "none")
         .attr("transform", "translate(200, 500)");
+
+      greset.append("circle")
+        .attr("r", "15px")
+        .attr("fill", "white")
+        .attr("cx", 12)
+        .attr("cy", 12)
+        .on("click", this.reset.bind(this));
 
       greset.append("path")
         .attr("cursor", "pointer")
@@ -353,6 +360,12 @@ ${isNaN(this.data.get(`${d.id.slice(0, 2)}-${d.properties.name}`)) ? 'Não dispo
       this.svg.transition()
         .duration(750)
         .call(this.zoom.transform, d3.zoomIdentity);
+    } else {
+      if (this.svg) {
+        this.svg.transition()
+          .duration(750)
+          .call(this.zoom.transform, d3.zoomIdentity);
+      }
     }
 
     // d3.select('#reset_button')
