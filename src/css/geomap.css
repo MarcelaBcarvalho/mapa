@@ -32,8 +32,8 @@
 }
 
 .select2-container .select2-choice, .select2-result-label {
-    font-size: 1.5em;
-    height: 300px; 
-    width: 300px;
-    overflow: auto;
-  }
+font-size: 1.5em;
+height: 300px; 
+width: 300px;
+overflow: auto;
+}
